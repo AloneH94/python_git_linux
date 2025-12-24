@@ -40,8 +40,8 @@ def momentum_strategy(data, initial_capital, lookback_period=20, threshold=0.02)
     df.loc[df['Momentum'] > threshold, 'Signal'] = 1
     df.loc[df['Momentum'] < -threshold, 'Signal'] = -1
     
-    # On remplit les signaux (ffill est déprécié dans les nouvelles versions pandas, on utilise ffill())
-    df['Position'] = df['Signal'].replace(0, method='ffill').fillna(0)
+    # Correction Warning Pandas : Utilisation de ffill() explicite
+    df['Position'] = df['Signal'].replace(0, np.nan).ffill().fillna(0)
     
     # Rendements : décalage d'un jour pour éviter le 'look-ahead bias'
     df['Strategy Returns'] = df['Position'].shift(1) * df['Daily Return']
@@ -63,7 +63,10 @@ def calculate_metrics(data, initial_capital):
     total_return = (final_val / initial_capital) - 1
     
     # Rendement annuel (252 jours de trading)
-    annual_return = (1 + total_return) ** (252 / len(data)) - 1
+    if len(data) > 0:
+        annual_return = (1 + total_return) ** (252 / len(data)) - 1
+    else:
+        annual_return = 0
     
     # Volatilité
     volatility = returns.std() * np.sqrt(252)
@@ -87,10 +90,13 @@ def calculate_metrics(data, initial_capital):
     }
 
 def run_predictive_model(data, forecast_days=30):
-    """Modèle de Régression Linéaire pour prédiction."""
+    """
+    Modèle de Régression Linéaire pour prédiction avec Intervalles de Confiance.
+    Returns: future_dates, future_preds, lower_bound, upper_bound, r2
+    """
     df = data[['Close']].copy().dropna()
     
-    # Feature Engineering: Lag features
+    # Feature Engineering: Lag features (J-1 à J-5)
     for i in range(1, 6):
         df[f'Lag_{i}'] = df['Close'].shift(i)
     df = df.dropna()
@@ -106,6 +112,13 @@ def run_predictive_model(data, forecast_days=30):
     model = LinearRegression()
     model.fit(X_train, y_train)
     
+    # Calcul de l'intervalle de confiance
+    # On utilise l'erreur quadratique moyenne (RMSE) sur le set de test
+    # pour estimer l'incertitude future (Intervalle à 95% = +/- 1.96 * RMSE)
+    y_pred_test = model.predict(X_test)
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
+    confidence_interval = 1.96 * rmse
+    
     # Prédictions futures
     last_features = X.iloc[-1:].values
     future_preds = []
@@ -113,14 +126,17 @@ def run_predictive_model(data, forecast_days=30):
     for _ in range(forecast_days):
         pred = model.predict(last_features)[0]
         future_preds.append(pred)
-        # Shift simple pour la prochaine feature
+        # Shift pour mettre à jour les lags avec la nouvelle prédiction
         last_features = np.roll(last_features, -1)
         last_features[0, -1] = pred
         
     future_dates = [data.index[-1] + timedelta(days=i) for i in range(1, forecast_days + 1)]
     
-    # Metrics du modèle sur le test set
-    y_pred_test = model.predict(X_test)
+    # Création des bornes (Low / High)
+    lower_bound = [p - confidence_interval for p in future_preds]
+    upper_bound = [p + confidence_interval for p in future_preds]
+    
+    # Metrics du modèle
     r2 = r2_score(y_test, y_pred_test)
     
-    return future_dates, future_preds, r2
+    return future_dates, future_preds, lower_bound, upper_bound, r2
