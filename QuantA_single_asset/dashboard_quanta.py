@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots  # Nécessaire pour le double axe
 from datetime import datetime, timedelta
 import time
 
@@ -36,7 +37,7 @@ st.sidebar.subheader("Momentum Strategy Settings")
 lookback = st.sidebar.slider("Lookback Period (Days)", 10, 100, 20)
 threshold = st.sidebar.number_input("Signal Threshold", 0.01, 0.10, 0.02, step=0.01)
 
-# Refresh automatique (Consigne 5)
+# Refresh automatique (Consigne 5 du PDF)
 if st.sidebar.checkbox("Auto-refresh data (5min)", value=False):
     time.sleep(300)
     st.rerun()
@@ -70,18 +71,61 @@ else:
         df_mom = sam.momentum_strategy(df, initial_capital, lookback, threshold)
         metrics_mom = sam.calculate_metrics(df_mom, initial_capital)
 
-        # --- 3. Visualisation Principale ---
-        st.subheader("strategy Performance Comparison")
+        # --- 3. Visualisation Principale (CORRIGÉE : DOUBLE AXE) ---
+        st.subheader("Strategy Performance Comparison")
         
-        fig = go.Figure()
-        # Prix de l'actif (normalisé pour l'échelle ou juste valeur du portefeuille)
-        fig.add_trace(go.Scatter(x=df.index, y=df['Close'], mode='lines', name='Raw Price (Close)', line=dict(color='gray', dash='dot')))
-        # Portefeuille B&H
-        fig.add_trace(go.Scatter(x=df_bh.index, y=df_bh['Holdings'], mode='lines', name='Buy & Hold Value'))
-        # Portefeuille Momentum
-        fig.add_trace(go.Scatter(x=df_mom.index, y=df_mom['Holdings'], mode='lines', name='Momentum Strategy Value'))
+        # Création d'un graphique avec un axe Y secondaire
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+        # Trace 1 : Prix de l'actif (Axe de droite - Secondaire)
+        # On le met en pointillé gris pour qu'il serve de contexte sans voler la vedette
+        fig.add_trace(
+            go.Scatter(
+                x=df.index, 
+                y=df['Close'], 
+                mode='lines', 
+                name='Raw Asset Price', 
+                line=dict(color='gray', dash='dot', width=1)
+            ),
+            secondary_y=True
+        )
+
+        # Trace 2 : Valeur Portefeuille Buy & Hold (Axe de gauche - Principal)
+        fig.add_trace(
+            go.Scatter(
+                x=df_bh.index, 
+                y=df_bh['Holdings'], 
+                mode='lines', 
+                name='Buy & Hold Strategy ($)',
+                line=dict(color='#1f77b4')
+            ),
+            secondary_y=False
+        )
+
+        # Trace 3 : Valeur Portefeuille Momentum (Axe de gauche - Principal)
+        fig.add_trace(
+            go.Scatter(
+                x=df_mom.index, 
+                y=df_mom['Holdings'], 
+                mode='lines', 
+                name='Momentum Strategy ($)',
+                line=dict(color='#ff7f0e')
+            ),
+            secondary_y=False
+        )
         
-        fig.update_layout(title=f"Portfolio Evolution: {ticker}", xaxis_title="Date", yaxis_title="Portfolio Value ($)", hovermode="x unified")
+        # Mise en forme du layout
+        fig.update_layout(
+            title=f"Portfolio Value vs Asset Price: {ticker}",
+            xaxis_title="Date",
+            hovermode="x unified",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+
+        # Titres des axes Y
+        fig.update_yaxes(title_text="Portfolio Value ($)", secondary_y=False)
+        fig.update_yaxes(title_text="Asset Price ($)", secondary_y=True, showgrid=False)
+
         st.plotly_chart(fig, use_container_width=True)
 
         # --- 4. Tableau des Métriques ---
@@ -112,13 +156,19 @@ else:
         st.subheader("🤖 AI Price Forecast (30 Days)")
         
         if st.button("Run Predictive Model"):
+            # On récupère les dates, les prix prédits et le score R2
             future_dates, future_prices, r2_score_val = sam.run_predictive_model(df)
             
             fig_pred = go.Figure()
             # Données historiques récentes (3 derniers mois pour lisibilité)
             recent_df = df.iloc[-90:]
+            
             fig_pred.add_trace(go.Scatter(x=recent_df.index, y=recent_df['Close'], mode='lines', name='Historical'))
             fig_pred.add_trace(go.Scatter(x=future_dates, y=future_prices, mode='lines+markers', name='Forecast', line=dict(color='red', dash='dash')))
             
-            fig_pred.update_layout(title=f"Linear Regression Forecast (R² on test: {r2_score_val:.2f})")
+            fig_pred.update_layout(
+                title=f"Linear Regression Forecast (R² on test: {r2_score_val:.2f})",
+                xaxis_title="Date",
+                yaxis_title="Price ($)"
+            )
             st.plotly_chart(fig_pred, use_container_width=True)
