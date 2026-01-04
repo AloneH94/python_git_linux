@@ -37,12 +37,7 @@ st.sidebar.subheader("Momentum Strategy Settings")
 lookback = st.sidebar.slider("Lookback Period (Days)", 10, 100, 20)
 threshold = st.sidebar.number_input("Signal Threshold", 0.01, 0.10, 0.02, step=0.01)
 
-# Refresh automatique
-from streamlit.runtime.scriptrunner import add_script_run_ctx
-from streamlit_autorefresh import st_autorefresh
 
-if st.sidebar.checkbox("Auto-refresh data (5min)", value=False):
-    st_autorefresh(interval=5 * 60 * 1000, key="datarefresh")
 
 # Chargement des données
 if start_date >= end_date:
@@ -182,4 +177,5 @@ else:
                 hovermode="x unified"
             )
             st.plotly_chart(fig_pred, use_container_width=True)
+
 
