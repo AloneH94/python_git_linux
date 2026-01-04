@@ -57,30 +57,39 @@ def generate_daily_report():
                 # Récupération des données via le module Quant A
                 data = sam.fetch_financial_data(symbol, start_date, end_date)
                 
-                if data is not None and not data.empty:
-                    # Calcul des métriques basiques
-                    last_price = data['Close'].iloc[-1]
-                    prev_price = data['Close'].iloc[-2]
-                    daily_var = ((last_price - prev_price) / prev_price) * 100
-                    
-                    # Volatilité (écart-type des rendements * racine(252))
-                    volatility = data['Daily Return'].std() * (252**0.5)
-                    
-                    # Max Drawdown rapide
-                    cum_ret = (1 + data['Daily Return']).cumprod()
-                    running_max = cum_ret.expanding().max()
-                    drawdown = (cum_ret - running_max) / running_max
-                    max_dd = drawdown.min()
+                data = sam.fetch_financial_data(symbol, start_date, end_date)
 
-                    # Écriture dans le fichier
-                    f.write(f"Asset: {symbol}\n")
-                    f.write(f"----------------------------\n")
-                    f.write(f"Close Price:      ${last_price:.2f}\n")
-                    f.write(f"24h Variation:    {daily_var:+.2f}%\n")
-                    f.write(f"Annual Volatility:{volatility:.2%}\n")
-                    f.write(f"1Y Max Drawdown:  {max_dd:.2%}\n")
-                    f.write(f"\n")
-                    print(f"Processed {symbol}")
+# Sécurité : données suffisantes
+if data is None or data.empty or len(data) < 2:
+    f.write(f"[!] Asset: {symbol} - Not enough data\n\n")
+    print(f"Not enough data for {symbol}")
+    continue
+
+# Prix
+last_price = data['Close'].iloc[-1]
+prev_price = data['Close'].iloc[-2]
+daily_var = ((last_price - prev_price) / prev_price) * 100
+
+# Volatilité annualisée (nettoyage NaN)
+returns = data['Daily Return'].dropna()
+volatility = returns.std() * (252 ** 0.5)
+
+# Max Drawdown
+cum_ret = (1 + returns).cumprod()
+running_max = cum_ret.expanding().max()
+drawdown = (cum_ret - running_max) / running_max
+max_dd = drawdown.min()
+
+# Écriture du rapport
+f.write(f"Asset: {symbol}\n")
+f.write(f"----------------------------\n")
+f.write(f"Last Price:        {last_price:.2f}\n")
+f.write(f"24h Variation:     {daily_var:+.2f}%\n")
+f.write(f"Annual Volatility: {volatility:.2%}\n")
+f.write(f"1Y Max Drawdown:   {max_dd:.2%}\n\n")
+
+print(f"Processed {symbol}")
+
                 else:
                     f.write(f"[!] Asset: {symbol} - No Data Available\n\n")
                     print(f"No data for {symbol}")
