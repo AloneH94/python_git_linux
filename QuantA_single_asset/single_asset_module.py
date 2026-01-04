@@ -138,7 +138,9 @@ for _ in range(forecast_days):
     last_features[:, 0] = pred
 
         
-    future_dates = [data.index[-1] + timedelta(days=i) for i in range(1, forecast_days + 1)]
+    future_dates = pd.bdate_range(start=data.index[-1], periods=forecast_days+1)[1:]
+    future_dates = future_dates.to_pydatetime().tolist()
+
     
     # Création des bornes (Low / High)
     lower_bound = [p - confidence_interval for p in future_preds]
@@ -148,4 +150,5 @@ for _ in range(forecast_days):
     r2 = r2_score(y_test, y_pred_test)
     
     return future_dates, future_preds, lower_bound, upper_bound, r2
+
 
