@@ -127,8 +127,16 @@ def run_predictive_model(data, forecast_days=30):
         pred = model.predict(last_features)[0]
         future_preds.append(pred)
         # Shift pour mettre à jour les lags avec la nouvelle prédiction
-        last_features = np.roll(last_features, -1)
-        last_features[0, -1] = pred
+        last_features = X.iloc[-1].to_numpy().reshape(1, -1)  # [Lag1, Lag2, Lag3, Lag4, Lag5]
+
+for _ in range(forecast_days):
+    pred = model.predict(last_features)[0]
+    future_preds.append(pred)
+
+    # shift right: Lag5 <- Lag4 <- ... <- Lag1, and Lag1 <- pred
+    last_features[:, 1:] = last_features[:, :-1]
+    last_features[:, 0] = pred
+
         
     future_dates = [data.index[-1] + timedelta(days=i) for i in range(1, forecast_days + 1)]
     
@@ -140,3 +148,4 @@ def run_predictive_model(data, forecast_days=30):
     r2 = r2_score(y_test, y_pred_test)
     
     return future_dates, future_preds, lower_bound, upper_bound, r2
+
