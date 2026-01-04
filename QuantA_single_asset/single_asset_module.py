@@ -149,6 +149,7 @@ for _ in range(forecast_days):
     # Metrics du modèle
     r2 = r2_score(y_test, y_pred_test)
     
-    return future_dates, future_preds, lower_bound, upper_bound, r2
+return future_dates, future_preds, lower_bound, upper_bound, r2
+
 
 
