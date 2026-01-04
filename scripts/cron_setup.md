@@ -8,8 +8,6 @@
 # 2. Add the following line at the end of the file:
 
 SHELL=/bin/bash
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-MAILTO=""
 
 0 20 * * * cd /ABS/PATH/python_git_linux && /usr/bin/flock -n /tmp/daily_report.lock /usr/bin/python3 scripts/daily_report.py >> scripts/daily_report.log 2>&1
 
