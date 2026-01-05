@@ -174,7 +174,7 @@ The application automatically refreshes data and handles API errors gracefully.
 ## Authors
 
 * **Quant A — Single Asset Analysis**: Alone HAYAT
-* **Quant B — Portfolio Analysis**: *Teammate*
+* **Quant B — Portfolio Analysis**: Benjamin KORN-BRZOZA
 
 ---
 
