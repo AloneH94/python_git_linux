@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import single_asset_module as sam
 
 # Import Quant B (doit contenir render_quantb())
-from dashboard_quantb import render_quantb
+from QuantB_portfolio.dashboard_quantb import render_quantb
 
 
 # ===========================
@@ -215,3 +215,4 @@ with tabA:
 with tabB:
     # IMPORTANT : pas de st.set_page_config() dans QuantB
     render_quantb()
+
