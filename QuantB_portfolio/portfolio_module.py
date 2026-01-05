@@ -267,9 +267,9 @@ def compute_risk_contributions(returns: pd.DataFrame, weights, periods_per_year:
 
     cov = returns.cov() * periods_per_year
     cols = cov.columns
-    w = normalize_weights(weights, cols).values.reshape(-1, 1)
+    w = normalize_weights(weights, cols).to_numpy(dtype=float).reshape(-1, 1)
 
-    port_var = float((w.T @ cov.values @ w))
+    port_var = (w.T @ cov.to_numpy(dtype=float) @ w).item()
     if port_var <= 0:
         return pd.DataFrame()
 

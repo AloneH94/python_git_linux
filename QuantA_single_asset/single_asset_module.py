@@ -14,6 +14,7 @@ def fetch_financial_data(ticker, start_date, end_date):
     Robust data fetcher:
     1) Try Yahoo Finance (yfinance)
     2) Fallback to Stooq if Yahoo is blocked
+    Ensures a usable 'Close' column.
     """
     import pandas as pd
 
@@ -28,10 +29,20 @@ def fetch_financial_data(ticker, start_date, end_date):
             start=start,
             end=end,
             progress=False,
-            auto_adjust=False
+            auto_adjust=False,
         )
         if df is not None and not df.empty:
             df.index = pd.to_datetime(df.index)
+
+            # If yfinance returns MultiIndex columns (field, ticker), keep only the field level
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
+            df.columns = [str(c).strip() for c in df.columns]
+
+
+            if "Close" not in df.columns and "Adj Close" in df.columns:
+                df = df.rename(columns={"Adj Close": "Close"})
+
             return df
     except Exception:
         pass
@@ -48,12 +59,19 @@ def fetch_financial_data(ticker, start_date, end_date):
         df = df.sort_index()
         df.index = pd.to_datetime(df.index)
 
+        df.columns = [str(c).strip() for c in df.columns]
+        lower_map = {c.lower(): c for c in df.columns}
+
+        if "Close" not in df.columns:
+            if "close" in lower_map:
+                df = df.rename(columns={lower_map["close"]: "Close"})
+            elif "adj close" in lower_map:
+                df = df.rename(columns={lower_map["adj close"]: "Close"})
+
         return df
+
     except Exception:
         return pd.DataFrame()
-
-
-
 
 # ----------------------------
 # Strategies

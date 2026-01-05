@@ -65,8 +65,8 @@ with tabA:
             st.error(f"No data found for {ticker}. Please check the symbol.")
         else:
             # Indicateurs en temps réel
-            latest_price = df['Close'].iloc[-1]
-            prev_price = df['Close'].iloc[-2]
+            latest_price = float(df["Close"].iloc[-1].values[0] if hasattr(df["Close"].iloc[-1], "values") else df["Close"].iloc[-1])
+            prev_price   = float(df["Close"].iloc[-2].values[0] if hasattr(df["Close"].iloc[-2], "values") else df["Close"].iloc[-2])
             daily_return = ((latest_price - prev_price) / prev_price) * 100
 
             col1, col2, col3 = st.columns(3)
