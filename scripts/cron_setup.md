@@ -9,7 +9,7 @@
 
 SHELL=/bin/bash
 
-0 20 * * * cd /ABS/PATH/python_git_linux && /usr/bin/flock -n /tmp/daily_report.lock /usr/bin/python3 scripts/daily_report.py >> scripts/daily_report.log 2>&1
+0 20 * * * cd /home/azureuser/python_git_linux && /usr/bin/flock -n /tmp/daily_report.lock /home/azureuser/python_git_linux/.venv/bin/python /home/azureuser/python_git_linux/scripts/daily_report.py >> /home/azureuser/python_git_linux/scripts/daily_report.log 2>&1
 
 
 # EXPLANATION
