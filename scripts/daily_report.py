@@ -57,49 +57,47 @@ def generate_daily_report():
         f.write("==========================================\n\n")
 
         for symbol in ASSETS:
-            try:
-                data = sam.fetch_financial_data(symbol, start_date, end_date)
+    try:
+        data = sam.fetch_financial_data(symbol, start_date, end_date)
 
-                # Sécurité : données suffisantes
-                if data is None or data.empty or len(data) < 2:
-                    f.write(f"[!] Asset: {symbol} - Not enough data\n\n")
-                    print(f"Not enough data for {symbol}")
-                    continue
+        # Sécurité : données suffisantes
+        if data is None or data.empty or len(data) < 2:
+            f.write(f"[!] Asset: {symbol} - Not enough data\n\n")
+            print(f"Not enough data for {symbol}")
+            continue
 
-                # Colonnes attendues
-                if "Close" not in data.columns:
-                    f.write(f"[!] Asset: {symbol} - Missing 'Close' column\n\n")
-                    print(f"Missing Close for {symbol}. Columns: {list(data.columns)}")
-                    continue
+        # Colonnes attendues
+        if "Close" not in data.columns:
+            f.write(f"[!] Asset: {symbol} - Missing 'Close' column\n\n")
+            print(f"Missing Close for {symbol}. Columns: {list(data.columns)}")
+            continue
 
-                # Open/Close du dernier jour disponible
-                last_close = float(data["Close"].iloc[-1])
-                prev_close = float(data["Close"].iloc[-2])
-                daily_var = ((last_close - prev_close) / prev_close) * 100.0
+        # Open/Close du dernier jour disponible
+        last_close = float(data["Close"].iloc[-1])
+        prev_close = float(data["Close"].iloc[-2])
+        daily_var = ((last_close - prev_close) / prev_close) * 100.0
 
-                last_open = float(data["Open"].iloc[-1]) if "Open" in data.columns else float("nan")
+        last_open = float(data["Open"].iloc[-1]) if "Open" in data.columns else float("nan")
 
-                # Returns daily sur 1 an
-                returns = data["Close"].pct_change().dropna()
+        returns = data["Close"].pct_change().dropna()
+        vol = _annualized_vol(returns)
+        max_dd = _max_drawdown(returns)
 
-                vol = _annualized_vol(returns, periods_per_year=252)
-                max_dd = _max_drawdown(returns)
+        f.write(f"Asset: {symbol}\n")
+        f.write("----------------------------\n")
+        f.write(f"Open (last):       {last_open:.2f}\n" if pd.notna(last_open) else "Open (last):       N/A\n")
+        f.write(f"Close (last):      {last_close:.2f}\n")
+        f.write(f"24h Variation:     {daily_var:+.2f}%\n")
+        f.write(f"Annual Volatility: {vol:.2%}\n" if pd.notna(vol) else "Annual Volatility: N/A\n")
+        f.write(f"1Y Max Drawdown:   {max_dd:.2%}\n" if pd.notna(max_dd) else "1Y Max Drawdown:   N/A\n")
+        f.write("\n")
 
-                # Écriture du rapport
-                f.write(f"Asset: {symbol}\n")
-                f.write("----------------------------\n")
-                f.write(f"Open (last):       {last_open:.2f}\n" if pd.notna(last_open) else "Open (last):       N/A\n")
-                f.write(f"Close (last):      {last_close:.2f}\n")
-                f.write(f"24h Variation:     {daily_var:+.2f}%\n")
-                f.write(f"Annual Volatility: {vol:.2%}\n" if pd.notna(vol) else "Annual Volatility: N/A\n")
-                f.write(f"1Y Max Drawdown:   {max_dd:.2%}\n" if pd.notna(max_dd) else "1Y Max Drawdown:   N/A\n")
-                f.write("\n")
+        print(f"Processed {symbol}")
 
-                print(f"Processed {symbol}")
+    except Exception as e:
+        f.write(f"[!] Asset: {symbol} - Error: {str(e)}\n\n")
+        print(f"Error processing {symbol}: {e}")
 
-            except Exception as e:
-                f.write(f"[!] Asset: {symbol} - Error: {str(e)}\n\n")
-                print(f"Error processing {symbol}: {e}")
 
     print(f"Report saved to: {report_file}")
 
