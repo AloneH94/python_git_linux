@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
-import portfolio_module as pm
+from . import portfolio_module as pm
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -300,3 +300,4 @@ def render_quantb():
 # Permet aussi de lancer QuantB seul si besoin :
 if __name__ == "__main__":
     render_quantb()
+
