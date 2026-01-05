@@ -11,16 +11,29 @@ from sklearn.metrics import mean_squared_error, r2_score
 # ----------------------------
 def fetch_financial_data(ticker, start_date, end_date):
     """
-    Fetch OHLCV data from Yahoo Finance.
-    Returns a DataFrame indexed by Date with columns including 'Close'.
+    Fetch OHLCV data from Yahoo Finance (robust to Streamlit date_input).
     """
-    df = yf.download(ticker, start=start_date, end=end_date, progress=False)
+    import pandas as pd
+    import yfinance as yf
+
+    # Convert date -> datetime
+    start = pd.to_datetime(start_date)
+    end = pd.to_datetime(end_date) + pd.Timedelta(days=1)  # IMPORTANT
+
+    df = yf.download(
+        ticker,
+        start=start,
+        end=end,
+        progress=False,
+        auto_adjust=False
+    )
 
     if df is None or df.empty:
         return pd.DataFrame()
 
     df.index = pd.to_datetime(df.index)
     return df
+
 
 
 # ----------------------------
@@ -185,3 +198,4 @@ def run_predictive_model(data, forecast_days=30):
     r2 = r2_score(y_test, y_pred_test)
 
     return future_dates, future_preds, lower_bound, upper_bound, r2
+
