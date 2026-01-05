@@ -11,28 +11,47 @@ from sklearn.metrics import mean_squared_error, r2_score
 # ----------------------------
 def fetch_financial_data(ticker, start_date, end_date):
     """
-    Fetch OHLCV data from Yahoo Finance (robust to Streamlit date_input).
+    Robust data fetcher:
+    1) Try Yahoo Finance (yfinance)
+    2) Fallback to Stooq if Yahoo is blocked
     """
     import pandas as pd
-    import yfinance as yf
 
-    # Convert date -> datetime
     start = pd.to_datetime(start_date)
-    end = pd.to_datetime(end_date) + pd.Timedelta(days=1)  # IMPORTANT
+    end = pd.to_datetime(end_date) + pd.Timedelta(days=1)
 
-    df = yf.download(
-        ticker,
-        start=start,
-        end=end,
-        progress=False,
-        auto_adjust=False
-    )
+    # --- Try Yahoo Finance ---
+    try:
+        import yfinance as yf
+        df = yf.download(
+            ticker,
+            start=start,
+            end=end,
+            progress=False,
+            auto_adjust=False
+        )
+        if df is not None and not df.empty:
+            df.index = pd.to_datetime(df.index)
+            return df
+    except Exception:
+        pass
 
-    if df is None or df.empty:
+    # --- Fallback: Stooq ---
+    try:
+        from pandas_datareader import data as pdr
+        df = pdr.DataReader(ticker, "stooq", start, end)
+
+        if df is None or df.empty:
+            return pd.DataFrame()
+
+        # Stooq returns data in descending order
+        df = df.sort_index()
+        df.index = pd.to_datetime(df.index)
+
+        return df
+    except Exception:
         return pd.DataFrame()
 
-    df.index = pd.to_datetime(df.index)
-    return df
 
 
 
@@ -198,4 +217,5 @@ def run_predictive_model(data, forecast_days=30):
     r2 = r2_score(y_test, y_pred_test)
 
     return future_dates, future_preds, lower_bound, upper_bound, r2
+
 
