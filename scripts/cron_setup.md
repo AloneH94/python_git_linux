@@ -1,11 +1,11 @@
 # CRON JOB CONFIGURATION
 # Objective: Run the daily report automatically every day at 8:00 PM.
-# Requirement: Project PDF - Core Feature #6
+# Requirement of the project
 
-# 1. Open the crontab editor in your Linux terminal:
+#Launch the Linux terminal's crontab editor:
 #    crontab -e
 
-# 2. Add the following line at the end of the file:
+#Put the following line at the file's conclusion.:
 
 SHELL=/bin/bash
 
@@ -13,6 +13,6 @@ SHELL=/bin/bash
 
 
 # EXPLANATION
-# 0 20 * * * -> Runs at 20:00 (8 PM) every day.
-# >> ...      -> Appends the output (print statements) to a log file for debugging.
-# 2>&1        -> Captures errors as well.
+# 0 20        Runs at 20:00 (8 PM) every day.
+# >>          Appends the output (print statements) to a log file for debugging.
+# 2>&1        Captures errors as well.
