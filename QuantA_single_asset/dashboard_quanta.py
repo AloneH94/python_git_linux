@@ -7,36 +7,31 @@ from datetime import datetime, timedelta
 # Importation de notre module local Quant A
 import single_asset_module as sam
 
-# Import Quant B (doit contenir render_quantb())
+# Import Quant B
 from QuantB_portfolio.dashboard_quantb import render_quantb
 
 
-# ===========================
-# Configuration de la page (UNE SEULE FOIS)
-# ===========================
+
+# Configuration de la page
 st.set_page_config(
     page_title="Quant Dashboard | Module A & B",
     layout="wide",
-    page_icon="📈"
+    page_icon=None
 )
 
-st.title("📈 Quantitative Analysis Dashboard")
+st.title("Quantitative Analysis Dashboard")
 st.markdown("Real-time financial data analysis, backtesting strategies, and forecasting.")
 
-# ===========================
 # Tabs
-# ===========================
 tabA, tabB = st.tabs(["Module A (Quant A)", "Module B (Quant B)"])
 
 
-# ==========================================================
-# ======================= TAB A : QUANT A ===================
-# ==========================================================
+#TAB A : QUANT A
 with tabA:
-    st.header("📈 Module A — Single Asset Analysis")
+    st.header("Module A — Single Asset Analysis")
 
-    # Sidebar : Paramètres (Quant A)
-    st.sidebar.header("⚙️ Parameters (Quant A)")
+    # Sidebar : Paramètres de Quant A
+    st.sidebar.header("Parameters for Quant A")
 
     # Sélection de l'actif
     ticker = st.sidebar.text_input("Asset Symbol (Yahoo Finance)", value="AAPL")
@@ -65,8 +60,8 @@ with tabA:
             st.error(f"No data found for {ticker}. Please check the symbol.")
         else:
             # Indicateurs en temps réel
-            latest_price = df['Close'].iloc[-1]
-            prev_price = df['Close'].iloc[-2]
+            latest_price = float(df["Close"].iloc[-1].values[0] if hasattr(df["Close"].iloc[-1], "values") else df["Close"].iloc[-1])
+            prev_price   = float(df["Close"].iloc[-2].values[0] if hasattr(df["Close"].iloc[-2], "values") else df["Close"].iloc[-2])
             daily_return = ((latest_price - prev_price) / prev_price) * 100
 
             col1, col2, col3 = st.columns(3)
@@ -134,7 +129,7 @@ with tabA:
             st.plotly_chart(fig, use_container_width=True)
 
             # Tableau des métriques
-            st.subheader("📊 Performance Metrics")
+            st.subheader("Performance Metrics")
 
             metrics_data = {
                 "Metric": ["Total Return", "Annual Return", "Volatility", "Sharpe Ratio", "Max Drawdown", "Final Value"],
@@ -158,7 +153,7 @@ with tabA:
             st.table(pd.DataFrame(metrics_data).set_index("Metric"))
 
             # Analyse prédictive
-            st.subheader("🤖 AI Price Forecast (30 Days with 95% CI)")
+            st.subheader("AI price forecast for the next 30 days (with a 95% confidence interval)")
 
             if st.button("Run Predictive Model", key="run_pred_model_quanta"):
                 future_dates, future_prices, lower, upper, r2_score_val = sam.run_predictive_model(df)
@@ -209,10 +204,7 @@ with tabA:
                 st.plotly_chart(fig_pred, use_container_width=True)
 
 
-# ==========================================================
-# ======================= TAB B : QUANT B ===================
-# ==========================================================
+#TAB B : QUANT B
 with tabB:
-    # IMPORTANT : pas de st.set_page_config() dans QuantB
     render_quantb()
 
