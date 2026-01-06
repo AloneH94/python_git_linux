@@ -3,9 +3,9 @@ import pandas as pd
 import numpy as np
 
 
-# ===========================
-# 1. Récupération des données
-# ===========================
+
+# 1. Data
+
 
 def fetch_multi_asset_data(symbols, start_date, end_date):
     """
@@ -56,13 +56,12 @@ def fetch_multi_asset_data(symbols, start_date, end_date):
         return prices
 
     except Exception as e:
-        # laisser la UI gérer l'affichage ; ici on renvoie None
         return None
 
 
-# ===========================
-# 2. Rendements & corrélations
-# ===========================
+
+# 2. returns & correlations
+
 
 def compute_returns(prices: pd.DataFrame, log_return: bool = False) -> pd.DataFrame:
     """
@@ -80,7 +79,7 @@ def compute_returns(prices: pd.DataFrame, log_return: bool = False) -> pd.DataFr
         returns = prices.pct_change()
 
     returns = returns.replace([np.inf, -np.inf], np.nan).dropna(how="all")
-    returns = returns.dropna()  # drop lignes avec NaN (alignement propre)
+    returns = returns.dropna()
     return returns
 
 
@@ -90,9 +89,8 @@ def compute_correlation(returns: pd.DataFrame) -> pd.DataFrame:
     return returns.corr()
 
 
-# ===========================
-# 3. Portefeuille : helpers
-# ===========================
+
+# 3. Portfolio : helpers
 
 def normalize_weights(weights, columns):
     """Convertit/norme les poids en pd.Series aligné sur columns."""
@@ -105,7 +103,6 @@ def normalize_weights(weights, columns):
     weights = weights.reindex(columns).fillna(0.0)
     s = weights.sum()
     if s == 0:
-        # fallback égalitaire
         return pd.Series(1 / len(columns), index=columns)
     return weights / s
 
@@ -121,7 +118,7 @@ def _rebal_dates(index: pd.DatetimeIndex, freq: str):
     if freq == "daily":
         return index
 
-    # Pour weekly/monthly, on prend la dernière date disponible de chaque période
+    # For weekly/monthly, we take the last available date of each periods
     s = pd.Series(index=index, data=np.ones(len(index)))
     if freq == "weekly":
         grp = s.resample("W").last().dropna().index
@@ -130,13 +127,13 @@ def _rebal_dates(index: pd.DatetimeIndex, freq: str):
     else:
         grp = pd.DatetimeIndex([])
 
-    # On garde uniquement celles qui existent bien dans l'index
+    # We keep only existing-in-index ones
     return index.intersection(grp)
 
 
-# ===========================
-# 4. Portefeuille : calculs
-# ===========================
+
+# 4. Portfolio : calculus
+
 
 def compute_portfolio_value(
     prices: pd.DataFrame,
@@ -161,15 +158,12 @@ def compute_portfolio_value(
     cols = prices.columns
     w = normalize_weights(weights, cols)
 
-    # Normalisation base 1
+    # Normalization
     norm = prices / prices.iloc[0]
 
-    # Valeur initiale = 1
+    # Initial value
     V = 1.0
 
-    # positions initiales (en "unités" de norm)
-    # capital alloué à chaque actif = V * w_i
-    # unités = capital / prix_norm
     units = (V * w) / norm.iloc[0]
 
     rebalancing = rebalancing.lower()
@@ -177,13 +171,10 @@ def compute_portfolio_value(
 
     out = []
     for dt, row in norm.iterrows():
-        # Valeur à la date dt
         V = float((units * row).sum())
         out.append((dt, V))
 
-        # Rebalancement si date dans rebal_dates (sauf peut-être la 1ère)
         if dt in rebal_dates and dt != norm.index[0] and rebalancing != "none":
-            # nouvelle allocation = V * w
             units = (V * w) / row
 
     port_value = pd.Series(dict(out)).sort_index()
@@ -230,7 +221,6 @@ def compute_portfolio_metrics(
 
     sharpe = (mean_annual - rf) / vol_annual if vol_annual > 0 else np.nan
 
-    # Valeur cumulée (base 1)
     if log_return:
         cum_value = np.exp(port_returns.cumsum())
     else:
@@ -249,9 +239,7 @@ def compute_portfolio_metrics(
     }
 
 
-# ===========================
-# 5. Diversification : contributions
-# ===========================
+# 5. Diversification
 
 def compute_risk_contributions(returns: pd.DataFrame, weights, periods_per_year: int = 252):
     """
@@ -267,9 +255,9 @@ def compute_risk_contributions(returns: pd.DataFrame, weights, periods_per_year:
 
     cov = returns.cov() * periods_per_year
     cols = cov.columns
-    w = normalize_weights(weights, cols).values.reshape(-1, 1)
+    w = normalize_weights(weights, cols).to_numpy(dtype=float).reshape(-1, 1)
 
-    port_var = float((w.T @ cov.values @ w))
+    port_var = (w.T @ cov.to_numpy(dtype=float) @ w).item()
     if port_var <= 0:
         return pd.DataFrame()
 
