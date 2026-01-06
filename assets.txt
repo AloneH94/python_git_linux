@@ -1,0 +1,76 @@
+# =========================
+# CORE ASSET UNIVERSE
+# Daily cron report (fast & robust)
+# =========================
+
+# ===== INDICES =====
+^GSPC
+^DJI
+^IXIC
+^RUT
+^VIX
+^FTSE
+^FCHI
+^GDAXI
+^N225
+^HSI
+
+# ===== RATES =====
+^IRX
+^FVX
+^TNX
+
+# ===== EQUITY ETFs =====
+SPY
+QQQ
+IWM
+VEA
+VWO
+
+# ===== SECTOR ETFs =====
+XLK
+XLF
+XLV
+XLE
+
+# ===== BONDS =====
+AGG
+TLT
+HYG
+
+# ===== COMMODITIES =====
+GC=F
+CL=F
+NG=F
+SI=F
+
+# ===== FX MAJORS =====
+EURUSD=X
+USDJPY=X
+USDCHF=X
+USDCAD=X
+
+# ===== CRYPTO =====
+BTC-USD
+ETH-USD
+SOL-USD
+
+# ===== US MEGA CAPS =====
+AAPL
+MSFT
+GOOGL
+AMZN
+NVDA
+META
+TSLA
+
+# ===== EUROPE =====
+MC.PA
+SAP.DE
+NESN.SW
+ASML.AS
+TTE.PA
+
+# =========================
+# END
+# =========================

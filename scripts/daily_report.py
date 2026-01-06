@@ -20,7 +20,28 @@ except ImportError as e:
     sys.exit(1)
 
 # PARAMETERS
-ASSETS = ["AAPL", "MSFT", "GOOGL", "BTC-USD", "EURUSD=X", "GC=F"]  # Gold futures = GC=F
+ASSETS_FILE = os.path.join(PROJECT_DIR, "assets.txt")
+
+def load_assets(path: str):
+    assets = []
+    if not os.path.exists(path):
+        print(f"[WARN] assets file not found: {path}")
+        return assets
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            s = line.strip()
+            if not s or s.startswith("#"):
+                continue
+            assets.append(s)
+    return assets
+
+ASSETS = load_assets(ASSETS_FILE)
+if not ASSETS:
+    print("[WARN] Empty assets list, using fallback.")
+    ASSETS = ["AAPL", "MSFT", "GOOGL", "BTC-USD", "EURUSD=X", "GC=F"]
+else:
+    print(f"[INFO] Loaded {len(ASSETS)} assets from assets.txt")
+
 REPORT_DIR = os.path.join(PROJECT_DIR, "daily_reports")
 
 
