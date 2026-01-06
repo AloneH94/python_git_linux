@@ -3,9 +3,7 @@ import os
 from datetime import datetime, timedelta
 import pandas as pd
 
-# ============================================================
-# PATH CONFIG (robuste pour exécution manuelle + cron)
-# ============================================================
+# PATH CONFIG
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))      # .../scripts
 PROJECT_DIR = os.path.dirname(CURRENT_DIR)                   # .../python_git_linux
 MODULE_DIR = os.path.join(PROJECT_DIR, "QuantA_single_asset") # .../QuantA_single_asset
@@ -21,16 +19,12 @@ except ImportError as e:
     print(f"Checked path: {MODULE_DIR}")
     sys.exit(1)
 
-# ============================================================
 # PARAMETERS
-# ============================================================
 ASSETS = ["AAPL", "MSFT", "GOOGL", "BTC-USD", "EURUSD=X", "GC=F"]  # Gold futures = GC=F
 REPORT_DIR = os.path.join(PROJECT_DIR, "daily_reports")
 
 
-# ============================================================
 # METRICS
-# ============================================================
 def _annualized_vol(returns: pd.Series, periods_per_year: int = 252) -> float:
     """Annualized volatility from periodic returns."""
     if returns is None or returns.dropna().empty:
@@ -56,9 +50,8 @@ def _safe_float(x) -> float:
         return float("nan")
 
 
-# ============================================================
+
 # REPORT GENERATION
-# ============================================================
 def generate_daily_report() -> str:
     """
     Génère un rapport TXT avec des stats de base sur une liste d'actifs.
@@ -87,7 +80,7 @@ def generate_daily_report() -> str:
             try:
                 data = sam.fetch_financial_data(symbol, start_date, end_date)
 
-                # --- safety checks ---
+                #safety checks
                 if data is None or getattr(data, "empty", True) or len(data) < 2:
                     f.write(f"[!] Asset: {symbol} - Not enough data\n\n")
                     print(f"[WARN] Not enough data for {symbol}")
@@ -98,7 +91,7 @@ def generate_daily_report() -> str:
                     print(f"[WARN] Missing 'Close' for {symbol}. Columns: {list(data.columns)}")
                     continue
 
-                # --- last values ---
+                #last values
                 last_close = _safe_float(data["Close"].iloc[-1])
                 prev_close = _safe_float(data["Close"].iloc[-2])
 
@@ -110,12 +103,12 @@ def generate_daily_report() -> str:
                 if "Open" in data.columns:
                     last_open = _safe_float(data["Open"].iloc[-1])
 
-                # --- returns over 1 year ---
+                #returns over 1 year
                 returns = data["Close"].pct_change().dropna()
                 vol = _annualized_vol(returns, periods_per_year=252)
                 max_dd = _max_drawdown(returns)
 
-                # --- write report block ---
+                #write report block
                 f.write(f"Asset: {symbol}\n")
                 f.write("----------------------------\n")
                 f.write(f"Open (last):       {last_open:.2f}\n" if pd.notna(last_open) else "Open (last):       N/A\n")
