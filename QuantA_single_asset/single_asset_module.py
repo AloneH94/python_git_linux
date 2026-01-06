@@ -5,22 +5,14 @@ import yfinance as yf
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
-
-# ----------------------------
 # Data fetching
-# ----------------------------
 def fetch_financial_data(ticker, start_date, end_date):
-    """
-    Robust data fetcher:
-    1) Try Yahoo Finance (yfinance)
-    2) Fallback to Stooq if Yahoo is blocked
-    """
     import pandas as pd
 
     start = pd.to_datetime(start_date)
     end = pd.to_datetime(end_date) + pd.Timedelta(days=1)
 
-    # --- Try Yahoo Finance ---
+    #Try Yahoo Finance
     try:
         import yfinance as yf
         df = yf.download(
@@ -28,15 +20,25 @@ def fetch_financial_data(ticker, start_date, end_date):
             start=start,
             end=end,
             progress=False,
-            auto_adjust=False
+            auto_adjust=False,
         )
         if df is not None and not df.empty:
             df.index = pd.to_datetime(df.index)
+
+            # If yfinance returns MultiIndex columns (field, ticker), keep only the field level
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
+            df.columns = [str(c).strip() for c in df.columns]
+
+
+            if "Close" not in df.columns and "Adj Close" in df.columns:
+                df = df.rename(columns={"Adj Close": "Close"})
+
             return df
     except Exception:
         pass
 
-    # --- Fallback: Stooq ---
+    #Fallback: Stooq
     try:
         from pandas_datareader import data as pdr
         df = pdr.DataReader(ticker, "stooq", start, end)
@@ -44,25 +46,26 @@ def fetch_financial_data(ticker, start_date, end_date):
         if df is None or df.empty:
             return pd.DataFrame()
 
-        # Stooq returns data in descending order
+        #Stooq returns data in descending order
         df = df.sort_index()
         df.index = pd.to_datetime(df.index)
 
+        df.columns = [str(c).strip() for c in df.columns]
+        lower_map = {c.lower(): c for c in df.columns}
+
+        if "Close" not in df.columns:
+            if "close" in lower_map:
+                df = df.rename(columns={lower_map["close"]: "Close"})
+            elif "adj close" in lower_map:
+                df = df.rename(columns={lower_map["adj close"]: "Close"})
+
         return df
+
     except Exception:
         return pd.DataFrame()
 
-
-
-
-# ----------------------------
 # Strategies
-# ----------------------------
 def buy_and_hold_strategy(df, initial_capital):
-    """
-    Buy & Hold: invest full capital at first date, hold until end.
-    Returns df_strat with columns: 'Holdings', 'Strategy_Return'
-    """
     out = df.copy()
     out = out.dropna(subset=["Close"])
 
@@ -79,13 +82,6 @@ def buy_and_hold_strategy(df, initial_capital):
 
 
 def momentum_strategy(df, initial_capital, lookback=20, threshold=0.02):
-    """
-    Simple momentum strategy:
-    - Compute lookback return: Close / Close.shift(lookback) - 1
-    - Signal = 1 if lookback_return > threshold else 0
-    - When signal=1 we are invested, else we are in cash
-    Returns df_strat with: 'Signal', 'Holdings', 'Strategy_Return'
-    """
     out = df.copy()
     out = out.dropna(subset=["Close"])
 
@@ -103,9 +99,7 @@ def momentum_strategy(df, initial_capital, lookback=20, threshold=0.02):
     return out
 
 
-# ----------------------------
 # Metrics
-# ----------------------------
 def _max_drawdown(equity_curve: pd.Series) -> float:
     running_max = equity_curve.cummax()
     dd = equity_curve / running_max - 1.0
@@ -113,12 +107,6 @@ def _max_drawdown(equity_curve: pd.Series) -> float:
 
 
 def calculate_metrics(df_strat, initial_capital, trading_days=252):
-    """
-    Compute basic performance metrics from a strategy DataFrame with:
-    - 'Holdings' (portfolio value)
-    - 'Strategy_Return' (daily strategy returns)
-    Returns dict with keys used in dashboard_quanta.py.
-    """
     out = {}
     if df_strat is None or df_strat.empty or "Holdings" not in df_strat.columns:
         # return safe defaults
@@ -172,14 +160,8 @@ def calculate_metrics(df_strat, initial_capital, trading_days=252):
     return out
 
 
-# ----------------------------
-# Predictive model (your function)
-# ----------------------------
+# Predictive model
 def run_predictive_model(data, forecast_days=30):
-    """
-    Linear Regression forecast with confidence interval (approx 95% based on test RMSE).
-    Returns: future_dates, future_preds, lower_bound, upper_bound, r2
-    """
     df = data[["Close"]].copy().dropna()
 
     for i in range(1, 6):
