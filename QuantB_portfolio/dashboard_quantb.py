@@ -12,11 +12,11 @@ def cached_fetch(tickers, start_str, end_str):
 
 
 def render_quantb():
-    st.header("📊 Quant B – Multi-Asset Portfolio Analysis")
+    st.header(" Quant B – Multi-Asset Portfolio Analysis")
 
-    # ===========================
-    # Inputs (dans la page)
-    # ===========================
+
+    # Inputs
+    
     col1, col2, col3 = st.columns([2, 1, 1])
 
     with col1:
@@ -56,9 +56,9 @@ def render_quantb():
     with c5:
         run_button = st.button("Run Quant B")
 
-    # ===========================
+
     # Run
-    # ===========================
+
     if not run_button:
         st.info("Configure puis clique sur **Run Quant B**.")
         return
@@ -92,25 +92,25 @@ def render_quantb():
         st.error("Aucun ticker valide après récupération des données.")
         return
 
-    # Résumé dataset
-    st.subheader("0️⃣ Dataset Summary")
+    # dataset
+    st.subheader("Dataset Summary")
     d1, d2, d3 = st.columns(3)
     d1.metric("Tickers used", str(len(fetched)))
     d2.metric("Start (effective)", str(prices.index.min().date()))
     d3.metric("End (effective)", str(prices.index.max().date()))
 
-    st.subheader("1️⃣ Raw Prices (tail)")
+    st.subheader("Raw Prices (tail)")
     st.dataframe(prices.tail())
 
-    # Rendements actifs
+    # returns
     returns = pm.compute_returns(prices, log_return=log_return)
     if returns.empty:
         st.error("Impossible de calculer les rendements (données insuffisantes).")
         return
 
-    # ===========================
+
     # Weights
-    # ===========================
+
     if weight_mode == "Equal Weight":
         weights = pd.Series(1 / len(returns.columns), index=returns.columns)
     else:
@@ -135,12 +135,11 @@ def render_quantb():
         else:
             weights = raw_weights / raw_weights.sum()
 
-    st.subheader("2️⃣ Portfolio Weights")
+    st.subheader("Portfolio Weights")
     st.dataframe(weights.to_frame("weight").style.format("{:.2%}"))
 
-    # ===========================
     # Rebalancing mapping
-    # ===========================
+
     reb_map = {
         "None (Buy & Hold)": "none",
         "Daily": "daily",
@@ -149,9 +148,9 @@ def render_quantb():
     }
     reb = reb_map.get(rebalancing, "monthly")
 
-    # ===========================
+
     # Portfolio value + returns
-    # ===========================
+
     port_value = pm.compute_portfolio_value(prices, weights, rebalancing=reb)
     if port_value.empty:
         st.error("Erreur dans le calcul de la valeur portefeuille.")
@@ -169,10 +168,8 @@ def render_quantb():
         st.error("Erreur dans le calcul des métriques de portefeuille.")
         return
 
-    # ===========================
     # Metrics
-    # ===========================
-    st.subheader("3️⃣ Portfolio Metrics")
+    st.subheader("Portfolio Metrics")
 
     m1, m2, m3, m4, m5 = st.columns(5)
     m1.metric("Annual Return", f"{metrics['mean_annual']:.2%}")
@@ -181,10 +178,10 @@ def render_quantb():
     m4.metric("Max Drawdown", f"{metrics['max_drawdown']:.2%}" if pd.notna(metrics["max_drawdown"]) else "NaN")
     m5.metric("Rebalancing", rebalancing)
 
-    # ===========================
+
     # Normalized curves
-    # ===========================
-    st.subheader("4️⃣ Normalized Prices & Portfolio Value")
+
+    st.subheader("Normalized Prices & Portfolio Value")
 
     norm_prices = prices / prices.iloc[0]
     port_norm = port_value / port_value.iloc[0]
@@ -213,10 +210,10 @@ def render_quantb():
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    # ===========================
+
     # Correlation
-    # ===========================
-    st.subheader("5️⃣ Correlation Matrix")
+
+    st.subheader("Correlation Matrix")
 
     corr = pm.compute_correlation(returns)
     if corr.empty:
@@ -233,10 +230,9 @@ def render_quantb():
         fig_corr.update_layout(title="Assets Correlation Matrix")
         st.plotly_chart(fig_corr, use_container_width=True)
 
-    # ===========================
     # Per-asset stats
-    # ===========================
-    st.subheader("6️⃣ Per-Asset Stats (Annualized)")
+
+    st.subheader("Per-Asset Stats (Annualized)")
 
     mean_daily_assets = returns.mean()
     vol_daily_assets = returns.std()
@@ -251,10 +247,10 @@ def render_quantb():
 
     st.dataframe(stats_df.style.format("{:.2%}"))
 
-    # ===========================
+
     # Diversification: Contributions
-    # ===========================
-    st.subheader("7️⃣ Diversification (Contributions)")
+
+    st.subheader("Diversification (Contributions)")
 
     rc = pm.compute_risk_contributions(returns, weights, periods_per_year=252)
     if not rc.empty:
@@ -297,7 +293,6 @@ def render_quantb():
         st.warning("Return contribution indisponible.")
 
 
-# Permet aussi de lancer QuantB seul si besoin :
 if __name__ == "__main__":
     render_quantb()
 
